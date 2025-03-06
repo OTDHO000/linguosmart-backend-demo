@@ -1,0 +1,157 @@
+plugins {
+  id 'org.springframework.boot' version '3.3.2'
+  id 'io.spring.dependency-management' version '1.1.6'
+  id 'java-library'
+  id 'eclipse'
+  id 'maven-publish'
+  id 'jacoco'
+}
+
+sourceCompatibility = 21
+
+group = 'lingguosmart'
+
+repositories {
+  if (PUBLIC_REPO_IND == 'true') {
+    mavenCentral()
+  }
+
+  mavenLocal()
+
+  if (NEXUS_REPO_URL){
+    maven {
+      url NEXUS_REPO_URL
+        credentials {
+                username NEXUS_REPO_USER
+                password NEXUS_REPO_PASSWORD
+        }
+    }
+  }
+}
+
+dependencies {
+  api("org.springframework.boot:spring-boot-starter-web")
+
+  api("org.springframework.boot:spring-boot-starter-data-jpa")
+  api("org.springframework.boot:spring-boot-starter-validation")
+  api("org.springframework.boot:spring-boot-starter-actuator")
+  api("org.springframework.boot:spring-boot-starter-web-services")
+  api("org.jboss.slf4j:slf4j-jboss-logmanager:${project['slf4j-jboss-logmanager.version']}")
+  runtimeOnly("mysql:mysql-connector-java:8.0.17")
+
+  api("jakarta.servlet:jakarta.servlet-api:${project['servlet-api.version']}")
+  api("jakarta.jms:jakarta.jms-api:${project['jms-api.version']}")
+  api("org.springframework:spring-jms:${project['spring-jms.version']}")
+
+  api("org.springframework.data:spring-data-envers:${project['spring-data-envers.version']}") 
+
+  api("com.fasterxml.jackson.datatype:jackson-datatype-hibernate5-jakarta:${project['jackson-datatype-hibernate5-jakarta.version']}")
+  api("com.fasterxml.jackson.module:jackson-module-parameter-names")  
+
+
+//  api("com.oracle.database.jdbc:ojdbc11:${project['ojdbc11.version']}")
+  api("org.apache.commons:commons-text:${project['commons-text.version']}")
+  api("org.apache.commons:commons-csv:${project['commons-csv.version']}")
+  api("com.google.guava:guava:${project['guava.version']}")
+  api("com.squareup.okhttp3:okhttp:${project['okhttp3.version']}")
+  api("org.json:json:${project['json.version']}")
+
+  compileOnly("org.projectlombok:lombok:${project['lombok.version']}")
+  annotationProcessor("org.projectlombok:lombok:${project['lombok.version']}")
+
+  api("org.mapstruct:mapstruct:${project['mapstruct.version']}")
+
+  annotationProcessor("org.hibernate:hibernate-jpamodelgen:${project['hibernate-jpamodelgen.version']}")
+  compileOnly("org.wildfly.security:wildfly-elytron:${project['wildfly-elytron.version']}")
+
+  testImplementation('org.springframework.boot:spring-boot-starter-test')
+  testImplementation(platform("org.junit:junit-bom:${project['junit-bom.version']}"))
+  testRuntimeOnly("org.junit.platform:junit-platform-launcher") 
+  testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+  testRuntimeOnly("org.junit.vintage:junit-vintage-engine")  
+}
+
+
+sourceSets {
+    generated {
+        java {
+            srcDirs = ['src/generated/java']
+        }
+    }
+}
+
+bootJar {
+    enabled = false
+}
+
+version="${version}-${env}"
+
+def getGitCommitHash() {
+  'git rev-parse --verify --short HEAD'.execute().text.trim()
+}
+
+def getGitBranch() {
+  'git rev-parse --abbrev-ref HEAD'.execute().text.trim()
+}
+
+jar {
+    archiveBaseName = "linguosmart-backend"
+    archiveVersion = "${version}"
+    archiveClassifier = ""
+
+    manifest {
+       attributes(
+         "Implementation-SCM-Branch": getGitBranch(),
+         "Implementation-SCM-Revision": getGitCommitHash(),
+         "Implementation-Version": version
+      )
+    }
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+}
+
+
+jacocoTestReport {
+    reports {
+        xml.required.set(true)
+        csv.required.set(true)
+        html.required.set(true)
+        html.destination file("${buildDir}/jacocoHtml")
+    }
+}
+
+check.dependsOn jacocoTestReport
+
+publishing {
+      publications {
+          mavenJava(MavenPublication) {
+              from components.java
+          }
+      }
+
+      // login account for Sonatype Nexus Repository
+      // gradle publish -PNEXUS_REPO_USER=xxx -PNEXUS_REPO_PASSWORD=yyy
+      repositories {
+            maven {
+              url NEXUS_REPO_URL
+              credentials {
+                      //username findProperty['NEXUS_REPO_USER']
+                      //password findProperty['NEXUS_REPO_PASSWORD']
+
+                      username NEXUS_REPO_USER
+                      password NEXUS_REPO_PASSWORD
+              }
+          }
+    }
+}
+
+tasks.withType(JavaCompile) {
+  options.annotationProcessorGeneratedSourcesDirectory = file("src/generated/java")
+}

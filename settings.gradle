@@ -1,0 +1,15 @@
+pluginManagement {
+    repositories {
+        (settings.PUBLIC_REPO_IND == 'true') ?
+                gradlePluginPortal() :
+                maven {
+                    url NEXUS_REPO_URL
+                    credentials {
+                        username NEXUS_REPO_USER
+                        password NEXUS_REPO_PASSWORD
+                    }
+                }
+    }
+}
+
+rootProject.name = 'linguosmart-backend'

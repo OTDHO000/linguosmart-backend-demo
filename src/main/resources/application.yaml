@@ -1,0 +1,16 @@
+spring:
+  dataSource:
+    url: jdbc:mysql://8.134.162.73:3306/linguosmart?serverTimezone=UTC
+    username:
+    password:
+    hikari:
+      max-lifetime: 800000
+      maximum-pool-size: 5
+      idle-timeout: 600000
+      minimum-idle: 2
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    show-sql: true
+    hibernate:
+      #ddl-auto: #update
+
